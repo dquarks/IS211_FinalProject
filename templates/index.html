@@ -1,0 +1,64 @@
+<html>
+  <head>
+    <title>{{ userid }}'s Book Catalogue</title>
+  </head>
+  <body>
+    <style>
+      div.wrapper {
+        text-align: right;
+      }
+    </style>
+    <div class='wrapper'>
+        welcome, {{ userid }}!
+        <form action='logout' method='GET'>
+          <input type='submit' value='logout'/>
+        </form>
+    </div>
+    <hr>
+    <table style='margin: 0px auto;'>
+      <h2 style='text-align: center'><u>Book Catalogue</u></h2>
+      {% if not size %}
+        <tr>
+          <td><i>your book catalogue is empty!</i></td>
+        </tr>
+      {% else %}
+        {% for i,(book,l) in booklist %}
+          <tr>
+            <td><img src='{{ l }}' alt='{{ book }}'></td>
+            <td>{{ book }}</td>
+            <form action="delete" method = "GET">
+              <input type="hidden" name = "index" value = "{{ i }}"/>
+              <td><input type="submit" value="delete"/></td>
+            </form>
+          </tr>
+        {% endfor %}
+      {% endif %}
+    </table>
+    <hr>
+    <table>
+      <form action='search' method='POST'>
+        <tr>
+          <td><input type='text' name='search_data' placeholder='isbn or title'/>
+          <td><input type="submit" value = "search"/></td>
+        </tr>
+      </table>
+      <br />
+      <table>
+      </form>
+      <tr>
+          {% if not search_result %}
+            <td>null</td>
+          {% else %}
+            {% for i,result in search_result %}
+            <td>{{ result }}</td>
+            <form action="add_book" method="GET">
+              <input type="hidden" name="this_book" value="{{ result }}"/>
+              <input type="hidden" name="this_index" value="{{ i }}"/>
+              <td><input type="submit" value="add"/></td>
+            </form>
+        </tr>
+        {% endfor %}
+        {% endif %}
+      </table>
+  </body>
+</html>
