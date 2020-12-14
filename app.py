@@ -2,6 +2,16 @@ import json
 import flask
 import requests
 import flask_login
+import sqlite3 as sql
+
+
+# engine = sqla.create_engine('sqlite:///catalogue.db')
+database = 'catalogue.db'
+def get_db():
+    db = getattr(flask.g, '_database', None)
+    if db is None:
+        db = flask.g._database = sql.connect(database)
+    return db
 
 app = flask.Flask(__name__)
 app.secret_key = 'abcdefghijklmnop'
@@ -50,8 +60,14 @@ def login():
 
     if flask.request.method == 'POST':
         username = flask.request.form['username']
-        if username in users_db:
-            if flask.request.form['password'] == users_db[username]['password']:
+        password = flask.request.form['password']
+
+        user_db = get_db()
+        curs = user_db.cursor()
+        curs.execute('SELECT * FROM users')
+        dump_info = curs.fetchall()
+        for u in dump_info:
+            if username == u[1] and password == u[2]:
                 user = User()
                 user.id = username
                 flask_login.login_user(user)
@@ -105,8 +121,15 @@ def add_item():
     this_book   = flask.request.args.get('this_book')
     this_index  = flask.request.args.get('this_index')
     this_thumb  = flask.request.args.get('this_thumb')
+
+    book_db = get_db()
+    curs = book_db.cursor()
+    curs.execute('INSERT INTO books VALUES (?,?)', (this_index, this_book))
+    curs.execute('INSERT INTO images VALUES (?, ?)', (this_thumb, this_index))
+    book_db.commit()
     booklist.append(this_book)
     bookimages.append(t_results[(int(this_index))])
+
     s_results.pop(int(this_index))
     t_results.pop(int(this_index))
     return flask.redirect('/protected')
@@ -114,9 +137,21 @@ def add_item():
 @app.route('/delete', methods = ['GET'])
 def delete_item():
     index = flask.request.args.get('index')
+    book_db = get_db()
+    curs = book_db.cursor()
+    curs.execute('DELETE FROM books WHERE idx=(?)', (index))
+    curs.execute('DELETE FROM images WHERE indx=(?)', (index))
+    book_db.commit()
+    
     booklist.pop(int(index))
     bookimages.pop(int(index))
     return flask.redirect('/protected')
+
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(flask.g, '_database', None)
+    if db is not None:
+        db.close()
 
 if __name__ == '__main__':
     app.run()
